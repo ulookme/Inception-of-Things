@@ -86,6 +86,20 @@ ls confs/
 chmod +x scripts/setup.sh
 ```
 
+################
+################
+# Voir les boxes installées
+vagrant box list
+
+# Supprimer la box corrompue
+vagrant box remove bento/ubuntu-22.04
+
+# Relancer (va retélécharger automatiquement)
+vagrant up
+
+###############
+###############
+
 ### Étape 3 : Lancer la VM
 ```bash
 vagrant up

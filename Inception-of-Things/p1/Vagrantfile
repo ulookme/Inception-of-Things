@@ -1,6 +1,9 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-22.04"
 
+  # Désactiver le démarrage parallèle
+  ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+
   # ===== Server =====
   config.vm.define "luqmanS", primary: true do |srv|
     srv.vm.hostname = "luqmanS"

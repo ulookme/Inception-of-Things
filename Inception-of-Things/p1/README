@@ -40,6 +40,18 @@ p1/
 └── README.md
 ```
 
+
+cd ~/Documents/ArcheanVision_Dev/Inception-of-Things/p1
+
+# Détruire les VMs
+vagrant destroy -f
+
+# Vérifier que le fichier node-token n'existe pas
+rm -f node-token
+
+# Relancer (ça va prendre 3-5 minutes)
+vagrant up
+
 ## Installation et lancement
 
 ### Étape 1 : Cloner le projet
@@ -263,19 +275,31 @@ vagrant reload
 vagrant destroy -f
 ```
 
-### Se connecter en SSH
-```bash
-# Connexion au serveur
-vagrant ssh luqmanS
+################
+################
+# Lister toutes les VMs
+prlctl list -a
 
-# Connexion au worker
-vagrant ssh luqmanSW
+# Supprimer toutes celles qui contiennent "luqman"
+prlctl list -a | grep luqman | awk '{print $4}' | xargs -I {} prlctl delete {} --force
+
+# OU supprimer directement le dossier
+rm -rf ~/Parallels/luqmanS.pvm
+rm -rf ~/Parallels/luqmanSW.pvm
+
+# Nettoyer Vagrant
+rm -rf .vagrant
+
+# Relancer
+vagrant up --no-parallel
 ```
 
 ### Vérifier l'état des VMs
 ```bash
 vagrant status
 ```
+##################
+##################
 
 ### Vérifier les pods K3s
 ```bash
@@ -345,3 +369,13 @@ vagrant up
 - Login : luqman
 - Projet : Inception-of-Things (IoT)
 - École : 42
+
+
+# Lister toutes les VMs Parallels
+prlctl list -a
+
+# Supprimer luqmanS manuellement
+prlctl delete luqmanS
+
+# Supprimer luqmanSW aussi si elle existe
+prlctl delete luqmanSW
