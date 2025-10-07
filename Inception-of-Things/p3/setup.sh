@@ -1,83 +1,82 @@
 #!/bin/bash
 set -e
 
-echo "=== Installation de K3d et kubectl ==="
+echo "=== Installation K3d et kubectl ==="
 
-# Vérifier si K3d est déjà installé
 if ! command -v k3d &> /dev/null; then
-    echo "Installation de K3d..."
     brew install k3d
 else
-    echo "K3d déjà installé"
+    echo "✓ K3d installé"
 fi
 
-# Vérifier si kubectl est déjà installé
 if ! command -v kubectl &> /dev/null; then
-    echo "Installation de kubectl..."
     brew install kubectl
 else
-    echo "kubectl déjà installé"
+    echo "✓ kubectl installé"
 fi
 
 echo ""
-echo "=== Création du cluster K3d ==="
-# Supprimer le cluster s'il existe déjà
+echo "=== Création cluster K3d ==="
 k3d cluster delete iot-cluster 2>/dev/null || true
 
-# Créer un nouveau cluster avec mapping de port pour accéder aux services
 k3d cluster create iot-cluster \
   --port 8080:80@loadbalancer \
   --port 8443:443@loadbalancer \
+  --port 8888:8888@loadbalancer \
   --agents 2
 
 echo ""
-echo "=== Attente que le cluster soit prêt ==="
-sleep 10
-kubectl wait --for=condition=Ready nodes --all --timeout=60s
+echo "=== Attente cluster ==="
+sleep 15
+kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
 echo ""
-echo "=== Création du namespace argocd ==="
+echo "=== Création namespace argocd ==="
 kubectl create namespace argocd
 
 echo ""
-echo "=== Installation d'Argo CD ==="
+echo "=== Installation Argo CD ==="
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 echo ""
-echo "=== Attente du démarrage d'Argo CD ==="
+echo "=== Attente Argo CD ==="
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 
 echo ""
-echo "=== Création du namespace dev ==="
+echo "=== Création namespace dev ==="
 kubectl create namespace dev
 
 echo ""
-echo "=== Configuration d'Argo CD pour accès local ==="
-# Changer le service argocd-server en NodePort
+echo "=== Configuration Argo CD ==="
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 
 echo ""
-echo "=== Récupération du mot de passe admin Argo CD ==="
+echo "=== Récupération mot de passe ==="
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+echo "$ARGOCD_PASSWORD" > password.txt
+
+echo ""
+echo "=== Démarrage port-forward Argo CD ==="
+pkill -f "port-forward" 2>/dev/null || true
+nohup kubectl port-forward -n argocd svc/argocd-server 8080:80 > /dev/null 2>&1 &
+sleep 2
 
 echo ""
 echo "============================================"
-echo "Installation terminée !"
+echo "✓ Installation terminée !"
 echo "============================================"
 echo ""
-echo "Cluster K3d créé : iot-cluster"
-echo "Namespaces créés : argocd, dev"
+echo "Argo CD    : http://localhost:8080"
+echo "Username   : admin"
+echo "Password   : $ARGOCD_PASSWORD"
 echo ""
-echo "Argo CD est accessible via :"
-echo "  URL: http://localhost:8080"
-echo "  Username: admin"
-echo "  Password: $ARGOCD_PASSWORD"
+echo "Application : http://localhost:8888"
 echo ""
-echo "Pour appliquer l'application Argo CD, exécutez :"
-echo "  kubectl apply -f confs/application.yaml"
+echo "PROCHAINES ÉTAPES :"
+echo "1. kubectl apply -f application.yaml"
+echo "2. Ouvrir http://localhost:8080"
+echo "3. Tester : curl http://localhost:8888"
 echo ""
-echo "Commandes utiles :"
-echo "  kubectl get pods -n argocd"
-echo "  kubectl get pods -n dev"
-echo "  kubectl get applications -n argocd"
+echo "Pour arrêter le port-forward :"
+echo "  pkill -f 'port-forward'"
 echo "============================================"

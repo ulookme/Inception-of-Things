@@ -1,0 +1,347 @@
+# Inception-of-Things - Part 1: K3s and Vagrant
+
+## Description
+Configuration d'un cluster Kubernetes K3s avec 2 machines virtuelles :
+- **luqmanS** : Serveur K3s (control-plane)
+- **luqmanSW** : Worker K3s (agent)
+
+## Prérequis
+
+### Logiciels nécessaires
+
+1. **Vagrant** (version 2.4.9 ou supérieure)
+   ```bash
+   brew tap hashicorp/tap
+   brew install hashicorp/tap/hashicorp-vagrant
+   ```
+
+2. **Parallels Desktop** (version compatible ARM)
+   - Télécharger depuis : https://www.parallels.com/
+   - Licence requise (version d'essai disponible)
+
+3. **Plugin Vagrant Parallels**
+   ```bash
+   vagrant plugin install vagrant-parallels
+   ```
+
+### Configuration système
+- **OS** : macOS avec processeur Apple Silicon (ARM64)
+- **RAM disponible** : Minimum 2 GB (1 GB par VM)
+- **Espace disque** : Minimum 10 GB
+
+## Structure du projet
+
+```
+p1/
+├── Vagrantfile
+├── scripts/
+│   ├── install_k3s_server.sh
+│   └── install_k3s_worker.sh
+└── README.md
+```
+
+## Installation et lancement
+
+### Étape 1 : Cloner le projet
+```bash
+cd Inception-of-Things/p1
+```
+
+### Étape 2 : Lancer le cluster
+```bash
+vagrant up
+```
+
+Cette commande va :
+1. Télécharger la box Ubuntu 22.04
+2. Créer les deux VMs (luqmanS et luqmanSW)
+3. Configurer les interfaces réseau
+4. Installer K3s sur le serveur
+5. Installer K3s agent sur le worker
+
+**Durée estimée** : 5-10 minutes selon votre connexion internet
+
+### Étape 3 : Vérifier le cluster
+```bash
+vagrant ssh luqmanS -c "sudo kubectl get nodes"
+```
+
+Résultat attendu :
+```
+NAME       STATUS   ROLES                  AGE   VERSION
+luqmans    Ready    control-plane,master   2m    v1.33.5+k3s1
+luqmansw   Ready    <none>                 1m    v1.33.5+k3s1
+```
+
+## Commandes utiles
+
+### Arrêter les VMs
+```bash
+vagrant halt
+```
+
+### Redémarrer les VMs
+```bash
+vagrant reload
+```
+
+### Détruire les VMs
+```bash
+vagrant destroy -f
+```
+
+### Se connecter en SSH
+```bash
+# Connexion au serveur
+vagrant ssh luqmanS
+
+# Connexion au worker
+vagrant ssh luqmanSW
+```
+
+### Vérifier l'état des VMs
+```bash
+vagrant status
+```
+
+### Vérifier les pods K3s
+```bash
+vagrant ssh luqmanS -c "sudo kubectl get pods -A"
+```
+
+## Configuration réseau
+
+- **luqmanS** (Serveur) : 192.168.56.110
+- **luqmanSW** (Worker) : 192.168.56.111
+
+Les deux VMs communiquent via un réseau privé host-only.
+
+## Fonctionnement technique
+
+### Serveur K3s (luqmanS)
+1. Installation de K3s en mode serveur
+2. Génération du token de jointure
+3. Sauvegarde du token dans `/vagrant/node-token`
+4. Attente que K3s soit complètement démarré
+
+### Worker K3s (luqmanSW)
+1. Attente que le token soit disponible dans `/vagrant/node-token`
+2. Lecture du token
+3. Installation de K3s en mode agent
+4. Connexion au serveur via l'IP 192.168.56.110:6443
+
+## Dépannage
+
+### Problème : Les VMs ne démarrent pas
+```bash
+# Vérifier que Parallels est bien installé
+ls /Applications/Parallels\ Desktop.app
+
+# Vérifier les plugins Vagrant
+vagrant plugin list
+```
+
+### Problème : Le worker ne se connecte pas
+```bash
+# Vérifier que le token existe
+cat node-token
+
+# Vérifier les logs du serveur
+vagrant ssh luqmanS -c "sudo journalctl -u k3s -f"
+
+# Vérifier les logs du worker
+vagrant ssh luqmanSW -c "sudo journalctl -u k3s-agent -f"
+```
+
+### Problème : Conflit de ports
+```bash
+# Nettoyer complètement
+vagrant destroy -f
+vagrant global-status --prune
+rm -rf .vagrant
+vagrant up
+```
+
+## Notes importantes
+
+- Les messages systemd en rouge (comme "Created symlink...") ne sont PAS des erreurs, juste des confirmations
+- Le dossier `/vagrant` est automatiquement partagé entre l'hôte et les VMs
+- Les Parallels Tools peuvent être obsolètes mais cela n'affecte pas le fonctionnement
+
+## Auteur
+- Login : luqman
+- Projet : Inception-of-Things (IoT)
+- École : 42# Inception-of-Things - Part 1: K3s and Vagrant
+
+## Description
+Configuration d'un cluster Kubernetes K3s avec 2 machines virtuelles :
+- **luqmanS** : Serveur K3s (control-plane)
+- **luqmanSW** : Worker K3s (agent)
+
+## Prérequis
+
+### Logiciels nécessaires
+
+1. **Vagrant** (version 2.4.9 ou supérieure)
+   ```bash
+   brew tap hashicorp/tap
+   brew install hashicorp/tap/hashicorp-vagrant
+   ```
+
+2. **Parallels Desktop** (version compatible ARM)
+   - Télécharger depuis : https://www.parallels.com/
+   - Licence requise (version d'essai disponible)
+
+3. **Plugin Vagrant Parallels**
+   ```bash
+   vagrant plugin install vagrant-parallels
+   ```
+
+### Configuration système
+- **OS** : macOS avec processeur Apple Silicon (ARM64)
+- **RAM disponible** : Minimum 2 GB (1 GB par VM)
+- **Espace disque** : Minimum 10 GB
+
+## Structure du projet
+
+```
+p1/
+├── Vagrantfile
+├── scripts/
+│   ├── install_k3s_server.sh
+│   └── install_k3s_worker.sh
+└── README.md
+```
+
+## Installation et lancement
+
+### Étape 1 : Cloner le projet
+```bash
+cd Inception-of-Things/p1
+```
+
+### Étape 2 : Lancer le cluster
+```bash
+vagrant up
+```
+
+Cette commande va :
+1. Télécharger la box Ubuntu 22.04
+2. Créer les deux VMs (luqmanS et luqmanSW)
+3. Configurer les interfaces réseau
+4. Installer K3s sur le serveur
+5. Installer K3s agent sur le worker
+
+**Durée estimée** : 5-10 minutes selon votre connexion internet
+
+### Étape 3 : Vérifier le cluster
+```bash
+vagrant ssh luqmanS -c "sudo kubectl get nodes"
+```
+
+Résultat attendu :
+```
+NAME       STATUS   ROLES                  AGE   VERSION
+luqmans    Ready    control-plane,master   2m    v1.33.5+k3s1
+luqmansw   Ready    <none>                 1m    v1.33.5+k3s1
+```
+
+## Commandes utiles
+
+### Arrêter les VMs
+```bash
+vagrant halt
+```
+
+### Redémarrer les VMs
+```bash
+vagrant reload
+```
+
+### Détruire les VMs
+```bash
+vagrant destroy -f
+```
+
+### Se connecter en SSH
+```bash
+# Connexion au serveur
+vagrant ssh luqmanS
+
+# Connexion au worker
+vagrant ssh luqmanSW
+```
+
+### Vérifier l'état des VMs
+```bash
+vagrant status
+```
+
+### Vérifier les pods K3s
+```bash
+vagrant ssh luqmanS -c "sudo kubectl get pods -A"
+```
+
+## Configuration réseau
+
+- **luqmanS** (Serveur) : 192.168.56.110
+- **luqmanSW** (Worker) : 192.168.56.111
+
+Les deux VMs communiquent via un réseau privé host-only.
+
+## Fonctionnement technique
+
+### Serveur K3s (luqmanS)
+1. Installation de K3s en mode serveur
+2. Génération du token de jointure
+3. Sauvegarde du token dans `/vagrant/node-token`
+4. Attente que K3s soit complètement démarré
+
+### Worker K3s (luqmanSW)
+1. Attente que le token soit disponible dans `/vagrant/node-token`
+2. Lecture du token
+3. Installation de K3s en mode agent
+4. Connexion au serveur via l'IP 192.168.56.110:6443
+
+## Dépannage
+
+### Problème : Les VMs ne démarrent pas
+```bash
+# Vérifier que Parallels est bien installé
+ls /Applications/Parallels\ Desktop.app
+
+# Vérifier les plugins Vagrant
+vagrant plugin list
+```
+
+### Problème : Le worker ne se connecte pas
+```bash
+# Vérifier que le token existe
+cat node-token
+
+# Vérifier les logs du serveur
+vagrant ssh luqmanS -c "sudo journalctl -u k3s -f"
+
+# Vérifier les logs du worker
+vagrant ssh luqmanSW -c "sudo journalctl -u k3s-agent -f"
+```
+
+### Problème : Conflit de ports
+```bash
+# Nettoyer complètement
+vagrant destroy -f
+vagrant global-status --prune
+rm -rf .vagrant
+vagrant up
+```
+
+## Notes importantes
+
+- Les messages systemd en rouge (comme "Created symlink...") ne sont PAS des erreurs, juste des confirmations
+- Le dossier `/vagrant` est automatiquement partagé entre l'hôte et les VMs
+- Les Parallels Tools peuvent être obsolètes mais cela n'affecte pas le fonctionnement
+
+## Auteur
+- Login : luqman
+- Projet : Inception-of-Things (IoT)
+- École : 42
