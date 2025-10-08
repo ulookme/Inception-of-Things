@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/TON_USERNAME_GITHUB/iot-deployment.git
+    repoURL: https://github.com/ulookme/iot-deployment.git
     targetRevision: main
     path: .
   destination:
