@@ -355,3 +355,48 @@ kubectl get pods -n argocd
 
 # 6. Une fois que tous les pods Argo CD sont "Running", relancer
 ./scripts/04_setup_argocd.sh
+
+
+
+
+
+k3d cluster delete iot-bonus 2>/dev/null || true
+docker rm -f gitlab-ce 2>/dev/null || true
+docker system prune -af --volumes
+
+# Étape 1 : GitLab
+./scripts/01_start_gitlab.sh
+# Attendre 2-3 minutes que GitLab démarre
+
+# Étape 2 : Vérifier que GitLab fonctionne
+open http://localhost:8081
+# Se connecter et créer le projet "iot-deployment"
+
+# Étape 3 : K3d + Argo CD
+./scripts/02_setup_k3d.sh
+# Attendre que tout soit prêt
+
+# Étape 4 : Vérifier que le cluster fonctionne
+kubectl get nodes
+kubectl get pods -n argocd
+
+# Étape 5 : Créer le token GitLab
+# (Suivre les instructions du script 03)
+./scripts/03_configure_gitlab.sh
+
+# Étape 6 : Pousser le code
+cd confs/
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin http://localhost:8081/root/iot-deployment.git
+git push -u origin main
+cd ..
+
+# Étape 7 : Connecter Argo CD
+./scripts/04_setup_argocd.sh
+
+# Étape 8 : Vérifier
+kubectl get application -n argocd
+kubectl get pods -n dev
+curl http://localhost:8889

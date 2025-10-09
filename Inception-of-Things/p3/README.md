@@ -6,7 +6,7 @@ k3d cluster delete iot-cluster
 ./setup.sh
 
 # Déployer l'app
-kubectl apply -f application.yaml
+kubectl apply -f confs/application.yaml
 
 # Tester
 curl http://localhost:8888
